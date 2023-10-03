@@ -46,7 +46,7 @@ header {
 }
 
 .container {
-  width: 850px;
+  width: 1200px;
   background-color: #fff;
   display: flex;
   gap: 70px;
