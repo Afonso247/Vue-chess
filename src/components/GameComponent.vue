@@ -33,11 +33,9 @@
 </template>
 
 <script>
-import Teclado from './TecladoComponent.vue';
 
     export default {
     name: "Game",
-    components: { Teclado },
     data() {
         return {
             pilhaAtual: 0,
