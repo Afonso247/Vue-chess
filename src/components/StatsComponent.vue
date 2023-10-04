@@ -1,19 +1,19 @@
 <template>
     <div class="hangman-container">
-        <img src="/images/hangman-0.svg" alt="hangman-img">
-        <h1>Jogo da Forca</h1>
+        <img src="/images/dishes.png" alt="dish-img">
+        <h1>Dish Dash</h1>
     </div>
 </template>
 
 <script>
     export default {
-        name: "Hangman"
+        name: "Stats"
     }
 </script>
 
 <style scoped>
     .hangman-container img {
-        max-width: 270px;
+        max-width: 180px;
     }
     .hangman-container h1 {
         color: #000;

@@ -1,25 +1,35 @@
 <script>
-import Hangman from './components/HangmanComponent.vue';
+import Stats from './components/StatsComponent.vue';
 import Game from './components/GameComponent.vue';
-import Modal from './components/GameModal.vue';
+import Modal from './components/Modal.vue';
 
   export default {
     name: "App",
     data() {
       return {
-        mostrarModal: false
+        mostrarModal: false,
+        modalText: '',
+        dataDump: null // 0: pratos lavados, 1: tempo total, 2: tempo médio
       }
     },
     methods: {
-      abrirModal() {
+      modalVitoria(resultData) {
         this.mostrarModal = true;
+        this.modalText = "Parabéns! Você venceu."
+        this.dataDump = resultData
+      },
+      modalDerrota(resultData) {
+        this.mostrarModal = true;
+        this.modalText = "Que pena! Você perdeu."
+        this.dataDump = resultData
       },
       fecharModal() {
         this.mostrarModal = false;
+        return window.location.reload();
       }
     },
     components: {
-      Hangman,
+      Stats,
       Game,
       Modal
     }
@@ -28,9 +38,24 @@ import Modal from './components/GameModal.vue';
 
 <template>
   <div class="container">
-    <Hangman />
-    <Game />
-    <Modal v-if="mostrarModal" @close="fecharModal"/>
+    <Stats />
+    <Game @vitoria="modalVitoria" @derrota="modalDerrota"/>
+    <Modal v-if="mostrarModal" @close="fecharModal">
+      <div>
+        <h2>
+          {{ modalText }}
+        </h2>
+        <p>
+          Pratos lavados: {{ dataDump[0] }}
+        </p>
+        <p>
+          Tempo total: {{ dataDump[1] }}seg
+        </p>
+        <p>
+          Tempo médio por prato: {{ dataDump[2] }}seg
+        </p>
+      </div>
+    </Modal>
   </div>
 
 </template>
@@ -50,7 +75,7 @@ header {
   background-color: #fff;
   display: flex;
   gap: 70px;
-  align-items: flex-end;
+  align-items: center;
   padding: 60px 40px;
   border-radius: 10px;
 }

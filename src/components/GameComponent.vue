@@ -39,6 +39,10 @@
     data() {
         return {
             pilhaAtual: 0,
+            pratosLavados: 0,
+            tempoGasto: 0,
+            tempoMedio: 0,
+            tempoInicial: null,
             inputValue: '',
             mensagemLavagem: '',
             onStandby: true,
@@ -67,30 +71,44 @@
         },
         lavarPrato(valorInput) {
 
-            // Verifique se o valor inserido corresponde a algum prato nas pilhas
-            const pratoLavado = this.acumuloPratos
-                .flatMap((acumulo) => acumulo.pratos)
-                .find((prato) => prato === valorInput);
+            if(valorInput.length >= 6) {
+                // Verifique se o valor inserido corresponde a algum prato nas pilhas
+                const pratoLavado = this.acumuloPratos
+                    .flatMap((acumulo) => acumulo.pratos)
+                    .find((prato) => prato === valorInput);
 
-            if (pratoLavado) {
-                // Remova o prato da pilha
-                const stack = this.acumuloPratos.find((acumulo) =>
-                acumulo.pratos.includes(pratoLavado)
-                );
-                stack.pratos = stack.pratos.filter((prato) => prato !== pratoLavado);
-                this.inputValue = ''
+                if (pratoLavado) {
+                    // Remova o prato da pilha
+                    const stack = this.acumuloPratos.find((acumulo) =>
+                    acumulo.pratos.includes(pratoLavado)
+                    );
+                    stack.pratos = stack.pratos.filter((prato) => prato !== pratoLavado);
+                    this.inputValue = ''
 
-                // Simule a lavagem do prato (você pode adicionar sua lógica real aqui)
-                this.showMsg = true;
+                    // Simule a lavagem do prato (você pode adicionar sua lógica real aqui)
+                    this.showMsg = true;
 
-                // Defina a mensagem de sucesso
-                this.msg = `Prato ${pratoLavado} lavado com sucesso!`;
+                    // Defina a mensagem de sucesso
+                    this.msg = `Prato ${pratoLavado} lavado com sucesso!`;
+
+                    // Atualize a quantidade de pratos lavados
+                    this.pratosLavados++;
+
+                    // Calcule o tempo gasto
+                    const tempoAtual = new Date();
+                    const tempoDecorrido = (tempoAtual - this.tempoInicial) / 1000; // Em segundos
+                    this.tempoGasto = tempoDecorrido.toFixed(2);
+                } else {
+                    // Se não houver correspondência, exiba uma mensagem de erro
+                    this.msg = 'Não foi possível lavar o prato. Código inválido.';
+                }
             } else {
-                // Se não houver correspondência, exiba uma mensagem de erro
-                this.msg = 'Não foi possível lavar o prato. Código inválido.';
+                return
             }
         },
         startJogo() {
+            this.tempoInicial = new Date();
+
             const interval = setInterval(() => {
 
                 this.onStandby = false
@@ -100,15 +118,23 @@
 
                 if (totalPratos >= 12) {
                     clearInterval(interval); // Encerra o loop
-                    this.showMsg = true;
-                    this.msg = 'Jogo encerrado, 12 ou mais pratos acumulados.';
+                    this.tempoGasto -= 5
+                    if(this.pratosLavados > 0) {
+                        this.tempoMedio = (this.tempoGasto / this.pratosLavados).toFixed(2)
+                    }
+                    const resultData = [this.pratosLavados, this.tempoGasto, this.tempoMedio]
+                    this.$emit('derrota', resultData) // Chama o Modal para indicar a derrota
                     return this.onStandby = true;
                 }
 
                 if (todasPilhasVazias) {
                     clearInterval(interval); // Encerra o loop
-                    this.showMsg = true;
-                    this.msg = 'Você venceu! Todas as pilhas estão vazias.';
+                    this.tempoGasto -= 5
+                    if(this.pratosLavados > 0) {
+                        this.tempoMedio = (this.tempoGasto / this.pratosLavados).toFixed(2)
+                    }
+                    const resultData = [this.pratosLavados, this.tempoGasto, this.tempoMedio]
+                    this.$emit('vitoria', resultData) // Chama o Modal para indicar a vitoria
                     return this.onStandby = true;
                 }
 
