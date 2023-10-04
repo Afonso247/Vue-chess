@@ -4,7 +4,9 @@
             <p>{{ msg }}</p>
         </div>
         <div class="empilhar-pratos" v-for="(acumulo, index) in acumuloPratos" :key="index">
-            <h2>Pilha {{ acumulo.id }}</h2>
+            <div class="pilha-titulo">
+                <h2>Pilha {{ acumulo.id }}</h2>
+            </div>
             <div class="prato-container">
                 <div
                 v-for="(prato, pratoIndex) in acumulo.pratos"
@@ -14,13 +16,6 @@
                 {{ prato }}
                 </div>
             </div>
-            <!-- <button 
-                class="prato-btn" 
-                @click="lavarPrato(index)" 
-                :disabled="estaLavando"
-                >
-                Lavar Prato
-            </button> -->
         </div>
         <div class="start-btn">
             <button @click="startJogo" v-show="onStandby">Iniciar</button>
@@ -28,6 +23,9 @@
         <div v-show="!onStandby" class="prato-type">
             <input type="text" placeholder="Digite o código de um prato..." v-model="inputValue" @input="lavarPrato(inputValue)">
             <p>{{ mensagemLavagem }}</p>
+        </div>
+        <div class="leave-btn">
+            <button @click="console.log('Clicou')">Sair do Jogo</button>
         </div>
     </div>
 </template>
@@ -47,9 +45,9 @@
             mensagemLavagem: '',
             onStandby: true,
             showMsg: false,
-            msg: 'bruh',
+            msg: '',
             acumuloPratos: [
-                { id: 1, pratos: ['40EAB6'] },
+                { id: 1, pratos: [] },
                 { id: 2, pratos: [] },
                 { id: 3, pratos: [] },
                 { id: 4, pratos: [] },
@@ -75,7 +73,7 @@
                 // Verifique se o valor inserido corresponde a algum prato nas pilhas
                 const pratoLavado = this.acumuloPratos
                     .flatMap((acumulo) => acumulo.pratos)
-                    .find((prato) => prato === valorInput);
+                    .find((prato) => prato === valorInput.toUpperCase());
 
                 if (pratoLavado) {
                     // Remova o prato da pilha
@@ -108,20 +106,51 @@
         },
         startJogo() {
             this.tempoInicial = new Date();
+            this.showMsg = true;
+            this.msg = 'Digite o código de um prato para lava-lo'
+            this.onStandby = false;
+
+            const self = this
+            
+            const inserirPratos = (iteracoes, atraso) => {
+                let contador = 0;
+
+                function prox() {
+                    if (contador < iteracoes) {
+                        const randomIndex = Math.floor(Math.random() * self.acumuloPratos.length);
+
+                        const pilhaSelecionada = self.acumuloPratos[randomIndex];
+                        const hex = self.getRandomHex()
+                        pilhaSelecionada.pratos.push(hex);
+                    
+                        contador++;
+
+                        setTimeout(prox, atraso);
+                    }
+                }
+
+                // Inicie a primeira iteração
+                prox();
+            }
+
+            setTimeout(() => inserirPratos(2, 1000), 1000) // Adiciona aleatoriamente dois pratos entre as pilhas, com 1seg de intervalo
 
             const interval = setInterval(() => {
 
-                this.onStandby = false
                 const totalPratos = this.acumuloPratos.reduce((total, acumulo) => total + acumulo.pratos.length, 0);
                 // Verifica se todas as pilhas estão vazias
                 const todasPilhasVazias = this.acumuloPratos.every(acumulo => acumulo.pratos.length === 0);
 
-                if (totalPratos >= 12) {
+                if (totalPratos >= 5) {
                     clearInterval(interval); // Encerra o loop
                     this.tempoGasto -= 5
                     if(this.pratosLavados > 0) {
                         this.tempoMedio = (this.tempoGasto / this.pratosLavados).toFixed(2)
                     }
+                    // Calcule o tempo gasto
+                    const tempoAtual = new Date();
+                    const tempoDecorrido = (tempoAtual - this.tempoInicial) / 1000; // Em segundos
+                    this.tempoGasto = tempoDecorrido.toFixed(2);
                     const resultData = [this.pratosLavados, this.tempoGasto, this.tempoMedio]
                     this.$emit('derrota', resultData) // Chama o Modal para indicar a derrota
                     return this.onStandby = true;
@@ -142,7 +171,7 @@
                 const randomIndex = Math.floor(Math.random() * this.acumuloPratos.length);
 
                 const pilhaSelecionada = this.acumuloPratos[randomIndex];
-                if (pilhaSelecionada.pratos.length < 4) {
+                if (pilhaSelecionada.pratos.length < 3) {
                     const hex = this.getRandomHex()
                     pilhaSelecionada.pratos.push(hex);
                 }
@@ -157,7 +186,7 @@
                 //     this.pilhaAtual = (this.pilhaAtual + 1) % this.acumuloPratos.length;
                 // }
 
-            }, 5000); // Intervalo de 3 segundos
+            }, 5000); // Intervalo de 5 segundos
         },
     }
 }
@@ -165,16 +194,17 @@
 
 <style scoped>
     .empilhar-pratos {
-        display: flex;
+        display: block;
+        flex-direction: row;
         gap: 10px;
         list-style: none;
         align-items: center;
         justify-content: center;
         color: #222;
+        border-bottom: 1px solid #0056b3;
     }
-    .empilhar-pratos .prato-container {
+    .prato-container {
         display: flex;
-        flex-direction: row;
         margin-bottom: 10px;
     }
     .msg {
@@ -205,10 +235,30 @@
         font-size: 18px;
         font-weight: bold;
         border-radius: 8px;
+        cursor: pointer;
         transition: background-color 0.3s ease-in-out;
     }
     .start-btn button:hover {
         background-color: #0056b3;
+    }
+    .leave-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 20px;
+    }
+    .leave-btn button {
+        background-color: #e74c3c;
+        color: #fff; 
+        padding: 15px 20px;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease-in-out;
+    }
+    .leave-btn button:hover {
+        background-color: #c0392b; /* Cor de fundo vermelho mais escura no hover */
     }
 
     .prato-type {
