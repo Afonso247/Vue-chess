@@ -17,15 +17,21 @@
                 </div>
             </div>
         </div>
+        <div class="diff-sel" v-show="onStandby">
+            <label for="diff">Selecione o garçom - dificuldade:</label>
+            <select id="diff" v-model="diffSel">
+                <option value="1">Sofia - Fácil</option>
+                <option value="2">Carlos - Médio</option>
+                <option value="3">Isa - Difícil</option>
+                <option value="4">Thiago - Árduo</option>
+            </select>
+        </div>
         <div class="start-btn">
-            <button @click="startJogo" v-show="onStandby">Iniciar</button>
+            <button @click="startJogo(diffSel)" v-show="onStandby">Iniciar</button>
         </div>
         <div v-show="!onStandby" class="prato-type">
             <input type="text" placeholder="Digite o código de um prato..." v-model="inputValue" @input="lavarPrato(inputValue)">
             <p>{{ mensagemLavagem }}</p>
-        </div>
-        <div class="leave-btn">
-            <button @click="console.log('Clicou')">Sair do Jogo</button>
         </div>
     </div>
 </template>
@@ -43,9 +49,11 @@
             tempoInicial: null,
             inputValue: '',
             mensagemLavagem: '',
+            interval: 5000,
             onStandby: true,
             showMsg: false,
             msg: '',
+            diffSel: '1',
             acumuloPratos: [
                 { id: 1, pratos: [] },
                 { id: 2, pratos: [] },
@@ -104,11 +112,12 @@
                 return
             }
         },
-        startJogo() {
+        startJogo(diffSel) {
             this.tempoInicial = new Date();
             this.showMsg = true;
             this.msg = 'Digite o código de um prato para lava-lo'
             this.onStandby = false;
+            const diff = Number(diffSel)
 
             const self = this
             
@@ -133,7 +142,12 @@
                 prox();
             }
 
-            setTimeout(() => inserirPratos(2, 1000), 1000) // Adiciona aleatoriamente dois pratos entre as pilhas, com 1seg de intervalo
+            if(diff === 4) {
+                setTimeout(() => inserirPratos(diff-1, 1000), 1000)
+                this.interval = 4500
+            } else {
+                setTimeout(() => inserirPratos(diff, 1000), 1000)
+            }
 
             const interval = setInterval(() => {
 
@@ -143,7 +157,6 @@
 
                 if (totalPratos >= 5) {
                     clearInterval(interval); // Encerra o loop
-                    this.tempoGasto -= 5
                     if(this.pratosLavados > 0) {
                         this.tempoMedio = (this.tempoGasto / this.pratosLavados).toFixed(2)
                     }
@@ -158,7 +171,6 @@
 
                 if (todasPilhasVazias) {
                     clearInterval(interval); // Encerra o loop
-                    this.tempoGasto -= 5
                     if(this.pratosLavados > 0) {
                         this.tempoMedio = (this.tempoGasto / this.pratosLavados).toFixed(2)
                     }
@@ -186,7 +198,7 @@
                 //     this.pilhaAtual = (this.pilhaAtual + 1) % this.acumuloPratos.length;
                 // }
 
-            }, 5000); // Intervalo de 5 segundos
+            }, this.interval);
         },
     }
 }
@@ -241,28 +253,31 @@
     .start-btn button:hover {
         background-color: #0056b3;
     }
-    .leave-btn {
+    .diff-sel {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
         margin-top: 20px;
+        color: #007bff;
     }
-    .leave-btn button {
-        background-color: #e74c3c;
-        color: #fff; 
-        padding: 15px 20px;
+
+    .diff-sel-label {
         font-size: 18px;
-        font-weight: bold;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background-color 0.3s ease-in-out;
+        margin-bottom: 10px;
     }
-    .leave-btn button:hover {
-        background-color: #c0392b; /* Cor de fundo vermelho mais escura no hover */
+
+    .diff-sel-input {
+        font-size: 16px;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        width: 200px;
+        margin-bottom: 10px;
     }
 
     .prato-type {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
     }

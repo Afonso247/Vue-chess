@@ -5,7 +5,8 @@
             <div class="text-container">
                 <h1>Dish Dash</h1>
                 <ul>
-                    <li>A cada 5 segundos, um garçom deixará um prato sujo em uma das pilhas - <span>
+                    <li>O garçom selecionado deixará um prato sujo em uma das pilhas em 
+                        pequenos intervalos - <span>
                         Lave todos pratos rapidamente para vencer o jogo
                     </span></li>
                     <li>A quantidade máxima tolerável de pratos não lavados é 5 - <b>
