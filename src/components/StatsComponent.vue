@@ -1,17 +1,14 @@
 <template>
     <div class="stats-container">
         <div class="content-container">
-            <img src="/images/dishes.png" alt="dish-img">
+            <img src="/images/chess.png" alt="chess-img">
             <div class="text-container">
-                <h1>Dish Dash</h1>
+                <h1>Chess</h1>
                 <ul>
-                    <li>O garçom selecionado deixará um prato sujo em uma das pilhas em 
-                        pequenos intervalos - <span>
-                        Lave todos pratos rapidamente para vencer o jogo
+                    <li>Uma joguinho tradicional de xadrez - <span>
+                        jogue para prender o rei adversário e aplicar xeque-mate 
+                        em seu oponente
                     </span></li>
-                    <li>A quantidade máxima tolerável de pratos não lavados é 5 - <b>
-                        se este valor for ultrapassado, você perde
-                    </b></li>
                 </ul>
             </div>
         </div>
@@ -46,7 +43,6 @@
         word-wrap: break-word;
         list-style: none;
         margin-left: -1rem;
-        border-bottom: 1px solid #000;
         margin-bottom: 10px;
     }
     .text-container li b {

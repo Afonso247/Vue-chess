@@ -1,296 +1,173 @@
 <template>
-    <div class="game-container">
-        <div class="msg" v-if="showMsg">
-            <p>{{ msg }}</p>
+    <div class="title">
+        <p v-if="brancas">Vez das <span>brancas</span></p>
+        <p v-if="negras">Vez das <span>negras</span></p>
+    </div>
+    <div class="chessboard">
+        <div v-for="(tabs, index) in tabuleiro" :key="index">
+            <div 
+                :class="{ 'quadrado': true, 'beige': isBeige(index), 'gray': isGray(index) }" 
+                :id="tabs.id" 
+                :data-type="tabs.type"
+                :data-color="tabs.color"
+                draggable="true"
+                v-html="tabs.svg"
+            ></div>
         </div>
-        <div class="empilhar-pratos" v-for="(acumulo, index) in acumuloPratos" :key="index">
-            <div class="pilha-titulo">
-                <h2>Pilha {{ acumulo.id }}</h2>
-            </div>
-            <div class="prato-container">
-                <div
-                v-for="(prato, pratoIndex) in acumulo.pratos"
-                :key="pratoIndex"
-                class="prato"
-                >
-                {{ prato }}
-                </div>
-            </div>
-        </div>
-        <div class="diff-sel" v-show="onStandby">
-            <label for="diff">Selecione o garçom - dificuldade:</label>
-            <select id="diff" v-model="diffSel">
-                <option value="1">Sofia - Fácil</option>
-                <option value="2">Carlos - Médio</option>
-                <option value="3">Isa - Difícil</option>
-                <option value="4">Thiago - Árduo</option>
-            </select>
-        </div>
-        <div class="start-btn">
-            <button @click="startJogo(diffSel)" v-show="onStandby">Iniciar</button>
-        </div>
-        <div v-show="!onStandby" class="prato-type">
-            <input type="text" placeholder="Digite o código de um prato..." v-model="inputValue" @input="lavarPrato(inputValue)">
-            <p>{{ mensagemLavagem }}</p>
-        </div>
+    </div>
+    <div class="info">
+        <p>info</p>
     </div>
 </template>
 
 <script>
+import tabs from '../data/data';
 
     export default {
     name: "Game",
     data() {
         return {
-            pilhaAtual: 0,
-            pratosLavados: 0,
-            tempoGasto: 0,
-            tempoMedio: 0,
-            tempoInicial: null,
-            inputValue: '',
-            mensagemLavagem: '',
-            interval: 5000,
-            onStandby: true,
-            showMsg: false,
-            msg: '',
-            diffSel: '1',
-            acumuloPratos: [
-                { id: 1, pratos: [] },
-                { id: 2, pratos: [] },
-                { id: 3, pratos: [] },
-                { id: 4, pratos: [] },
-                { id: 5, pratos: [] }
-            ]
+            brancas: false,
+            negras: false,
+            width: 8,
+            tabuleiro: tabs
         }
     },
     methods: {
-        getRandomHex() {
-            // Gera um código Hex aleatório
-            const letters = '0123456789ABCDEF';
-            let hex = '';
+        iniciarPartida() {
+            this.brancas = true;
+        },
+        passarVez() {
+            this.brancas = !this.brancas;
+            this.negras = !this.negras;
+        },
+        handleDragStart(event) {
+            event.dataTransfer.setData('text/plain', event.target.id);
+            console.log(event.target.id)
+            console.log(event)
+        },
+        handleDragOver(event) {
+            event.preventDefault();
+        },
+        handleDrop(event) {
+            // Evita o comportamento padrão do navegador
+            event.stopPropagation();
+            event.preventDefault();
 
-            for (let i = 0; i < 6; i++) {
-                hex += letters[Math.floor(Math.random() * 16)];
+            const draggedId = event.dataTransfer.getData('text/plain');
+
+            // Obtém o ID do elemento alvo
+            const droppedId = event.target.closest('.quadrado').id;
+
+            this.moverPeca(parseInt(draggedId), parseInt(droppedId));
+        },
+        moverPeca(draggedId, droppedId) {
+
+            const draggedPiece = this.tabuleiro.find(piece => piece.id === draggedId);
+            const droppedSquare = this.tabuleiro.find(square => square.id === droppedId);
+
+            // Verificar se os índices são válidos
+            if (draggedPiece < 0 || draggedPiece >= this.tabuleiro.length ||
+                droppedSquare < 0 || droppedSquare >= this.tabuleiro.length || 
+                draggedPiece == droppedSquare) {
+                console.log('Índices inválidos');
+                return;
             }
 
-            return hex;
-        },
-        lavarPrato(valorInput) {
+            // Vez das brancas
+            if(this.brancas && draggedPiece.color === 'white') {
+                if(droppedSquare.color !== 'white') {
+                    // Trocar os atributos "id" entre os objetos
+                    const idTemp = this.tabuleiro[draggedPiece.id].id;
+                    this.tabuleiro[draggedPiece.id].id = this.tabuleiro[droppedSquare.id].id;
+                    this.tabuleiro[droppedSquare.id].id = idTemp;
 
-            if(valorInput.length >= 6) {
-                // Verifique se o valor inserido corresponde a algum prato nas pilhas
-                const pratoLavado = this.acumuloPratos
-                    .flatMap((acumulo) => acumulo.pratos)
-                    .find((prato) => prato === valorInput.toUpperCase());
+                    // Trocar os objetos de posição na this.tabuleiro
+                    if(droppedSquare.color === 'black') {
+                        this.tabuleiro[draggedPiece.id] = this.tabuleiro[droppedSquare.id];
+                        this.tabuleiro[droppedSquare.id] = { id: idTemp, type: 'empty', svg: ''};
+                    } else {
+                        const temp = this.tabuleiro[draggedPiece.id];
+                        this.tabuleiro[draggedPiece.id] = this.tabuleiro[droppedSquare.id];
+                        this.tabuleiro[droppedSquare.id] = temp;
+                    }
 
-                if (pratoLavado) {
-                    // Remova o prato da pilha
-                    const stack = this.acumuloPratos.find((acumulo) =>
-                    acumulo.pratos.includes(pratoLavado)
-                    );
-                    stack.pratos = stack.pratos.filter((prato) => prato !== pratoLavado);
-                    this.inputValue = ''
-
-                    // Simule a lavagem do prato (você pode adicionar sua lógica real aqui)
-                    this.showMsg = true;
-
-                    // Defina a mensagem de sucesso
-                    this.msg = `Prato ${pratoLavado} lavado com sucesso!`;
-
-                    // Atualize a quantidade de pratos lavados
-                    this.pratosLavados++;
-
-                    // Calcule o tempo gasto
-                    const tempoAtual = new Date();
-                    const tempoDecorrido = (tempoAtual - this.tempoInicial) / 1000; // Em segundos
-                    this.tempoGasto = tempoDecorrido.toFixed(2);
+                    this.passarVez()
                 } else {
-                    // Se não houver correspondência, exiba uma mensagem de erro
-                    this.msg = 'Não foi possível lavar o prato. Código inválido.';
+                    console.log("Não pode comer as mesmas peças");
+                    return;
                 }
-            } else {
-                return
-            }
-        },
-        startJogo(diffSel) {
-            this.tempoInicial = new Date();
-            this.showMsg = true;
-            this.msg = 'Digite o código de um prato para lava-lo'
-            this.onStandby = false;
-            const diff = Number(diffSel)
-
-            const self = this
             
-            const inserirPratos = (iteracoes, atraso) => {
-                let contador = 0;
+            // Vez das negras
+            } else if (this.negras && draggedPiece.color === 'black') {
+                if(droppedSquare.color !== 'black') {
+                    // Trocar os atributos "id" entre os objetos
+                    const idTemp = this.tabuleiro[draggedPiece.id].id;
+                    this.tabuleiro[draggedPiece.id].id = this.tabuleiro[droppedSquare.id].id;
+                    this.tabuleiro[droppedSquare.id].id = idTemp;
 
-                function prox() {
-                    if (contador < iteracoes) {
-                        const randomIndex = Math.floor(Math.random() * self.acumuloPratos.length);
-
-                        const pilhaSelecionada = self.acumuloPratos[randomIndex];
-                        const hex = self.getRandomHex()
-                        pilhaSelecionada.pratos.push(hex);
-                    
-                        contador++;
-
-                        setTimeout(prox, atraso);
+                    // Trocar os objetos de posição na this.tabuleiro
+                    // Trocar os objetos de posição na this.tabuleiro
+                    if(droppedSquare.color === 'white') {
+                        this.tabuleiro[draggedPiece.id] = this.tabuleiro[droppedSquare.id];
+                        this.tabuleiro[droppedSquare.id] = { id: idTemp, type: 'empty', svg: ''};
+                    } else {
+                        const temp = this.tabuleiro[draggedPiece.id];
+                        this.tabuleiro[draggedPiece.id] = this.tabuleiro[droppedSquare.id];
+                        this.tabuleiro[droppedSquare.id] = temp;
                     }
-                }
 
-                // Inicie a primeira iteração
-                prox();
+                    this.passarVez()
+                } else {
+                    console.log("Não pode comer as mesmas peças");
+                    return;
+                }
             }
-
-            if(diff === 4) {
-                setTimeout(() => inserirPratos(diff-1, 1000), 1000)
-                this.interval = 4500
-            } else {
-                setTimeout(() => inserirPratos(diff, 1000), 1000)
-            }
-
-            const interval = setInterval(() => {
-
-                const totalPratos = this.acumuloPratos.reduce((total, acumulo) => total + acumulo.pratos.length, 0);
-                // Verifica se todas as pilhas estão vazias
-                const todasPilhasVazias = this.acumuloPratos.every(acumulo => acumulo.pratos.length === 0);
-
-                if (totalPratos >= 5) {
-                    clearInterval(interval); // Encerra o loop
-                    if(this.pratosLavados > 0) {
-                        this.tempoMedio = (this.tempoGasto / this.pratosLavados).toFixed(2)
-                    }
-                    // Calcule o tempo gasto
-                    const tempoAtual = new Date();
-                    const tempoDecorrido = (tempoAtual - this.tempoInicial) / 1000; // Em segundos
-                    this.tempoGasto = tempoDecorrido.toFixed(2);
-                    const resultData = [this.pratosLavados, this.tempoGasto, this.tempoMedio]
-                    this.$emit('derrota', resultData) // Chama o Modal para indicar a derrota
-                    return this.onStandby = true;
-                }
-
-                if (todasPilhasVazias) {
-                    clearInterval(interval); // Encerra o loop
-                    if(this.pratosLavados > 0) {
-                        this.tempoMedio = (this.tempoGasto / this.pratosLavados).toFixed(2)
-                    }
-                    const resultData = [this.pratosLavados, this.tempoGasto, this.tempoMedio]
-                    this.$emit('vitoria', resultData) // Chama o Modal para indicar a vitoria
-                    return this.onStandby = true;
-                }
-
-                // Adiciona aleatoriamente entre as pilhas
-                const randomIndex = Math.floor(Math.random() * this.acumuloPratos.length);
-
-                const pilhaSelecionada = this.acumuloPratos[randomIndex];
-                if (pilhaSelecionada.pratos.length < 3) {
-                    const hex = this.getRandomHex()
-                    pilhaSelecionada.pratos.push(hex);
-                }
-
-
-                // Adiciona até a pilha estiver cheia
-                // const pilhaSelecionada = this.acumuloPratos[this.pilhaAtual];
-                // if (pilhaSelecionada.pratos.length < 4) {
-                //     const hex = this.getRandomHex()
-                //     pilhaSelecionada.pratos.push(hex);
-                // } else {
-                //     this.pilhaAtual = (this.pilhaAtual + 1) % this.acumuloPratos.length;
-                // }
-
-            }, this.interval);
         },
+        isBeige(index) {
+            const row = Math.floor(index / this.width);
+            const col = index % this.width;
+            return (row + col) % 2 === 0;
+        },
+        isGray(index) {
+            return !this.isBeige(index);
+        }
+    },
+    mounted() {
+        this.iniciarPartida();
+        const squares = document.querySelectorAll('.quadrado');
+
+        squares.forEach(square => {
+            square.addEventListener('dragstart', this.handleDragStart);
+            square.addEventListener('dragover', this.handleDragOver);
+            square.addEventListener('drop', this.handleDrop);
+        });
     }
 }
 </script>
 
 <style scoped>
-    .empilhar-pratos {
-        display: block;
-        flex-direction: row;
-        gap: 10px;
-        list-style: none;
-        align-items: center;
+    .title {
+        color: black;
+    }
+    .chessboard {
+        width: 320px;
+        height: 320px;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    .quadrado {
+        width: 40px;
+        height: 40px;
+        border: 1px solid black;
+        display: flex;
         justify-content: center;
-        color: #222;
-        border-bottom: 1px solid #0056b3;
-    }
-    .prato-container {
-        display: flex;
-        margin-bottom: 10px;
-    }
-    .msg {
-        color: #0056b3;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-
-    .prato {
-        border: 1px solid #ccc;
-        padding: 5px 10px;
-        margin-right: 10px;
-    }
-    .prato-btn {
-        margin-left: auto;
-    }
-
-    .start-btn {
-        display: flex;
         align-items: center;
-        justify-content: center;
-        margin-top: 20px;
     }
-    .start-btn button {
-        background-color: #0074d9;
-        color: #fff;
-        padding: 15px 20px;
-        font-size: 18px;
-        font-weight: bold;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background-color 0.3s ease-in-out;
+    .beige {
+        background-color: #f0d9b5; /* Cor bege */
     }
-    .start-btn button:hover {
-        background-color: #0056b3;
-    }
-    .diff-sel {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        margin-top: 20px;
-        color: #007bff;
-    }
-
-    .diff-sel-label {
-        font-size: 18px;
-        margin-bottom: 10px;
-    }
-
-    .diff-sel-input {
-        font-size: 16px;
-        padding: 8px;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        width: 200px;
-        margin-bottom: 10px;
-    }
-
-    .prato-type {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-    .prato-type input {
-        padding: 10px;
-        width: 100%;
-        border: 1px solid #000;
-        border-radius: 5px;
-        font-size: 16px;
-        outline: none;
-    }
-    .prato-type input:focus {
-        border-color: #007bff; /* Cor da borda quando focado */
-        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Sombra quando focado */
+    .gray {
+        background-color: #a9a9a9; /* Cor cinza */
     }
 </style>
