@@ -19,7 +19,7 @@
         </div>
     </div>
     <div class="info">
-        <p>info</p>
+        <p v-for="(historico, index) in historicoMovimentos" :key="index">{{ historico }}</p>
     </div>
 </template>
 
@@ -33,7 +33,8 @@ import tabs from '../data/data';
             brancas: false,
             negras: false,
             width: 8,
-            tabuleiro: tabs
+            tabuleiro: tabs,
+            historicoMovimentos: []
         }
     },
     methods: {
@@ -140,13 +141,16 @@ import tabs from '../data/data';
                     if(dropped.color === 'black') {
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = { id: idTemp, type: 'empty', svg: ''};
+
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, true);
                     } else {
                         const temp = this.tabuleiro[dragged.id];
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = temp;
+
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, false);
                     }
 
-                    this.passarVez()
                 } else {
                     console.log("Não pode comer as mesmas peças");
                     return;
@@ -165,13 +169,16 @@ import tabs from '../data/data';
                     if(dropped.color === 'white') {
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = { id: idTemp, type: 'empty', svg: ''};
+
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, true);
                     } else {
                         const temp = this.tabuleiro[dragged.id];
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = temp;
+
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, false);
                     }
 
-                    this.passarVez()
                 } else {
                     console.log("Não pode comer as mesmas peças");
                     return;
@@ -336,6 +343,33 @@ import tabs from '../data/data';
 
             return false; // Movimento inválido para o rei
         },
+        adicionarMovimentoAoHistorico(destino, tipoOrigem, tipoDestino, captura) {
+            let pecaOrig = ''
+            if(tipoOrigem !== 'pawn') {
+                pecaOrig = tipoOrigem.charAt(0).toUpperCase();
+            }
+            let localDest = ''
+            if(tipoDestino !== 'pawn' && tipoDestino !== 'empty') {
+                localDest = tipoDestino.charAt(0).toUpperCase();
+            }
+            let movimento = '';
+
+            if (captura) {
+                movimento = `${pecaOrig}x${localDest}${destino}`;
+            } else {
+                movimento = `${pecaOrig}${localDest}${destino}`;
+            }
+
+            // Adiciona ao histórico de movimentos
+            if (this.brancas) {
+                this.historicoMovimentos.push(` ${this.historicoMovimentos.length + 1}. ${movimento}`);
+            } else {
+                const ultimoMovimento = this.historicoMovimentos[this.historicoMovimentos.length - 1];
+                this.historicoMovimentos[this.historicoMovimentos.length - 1] = ultimoMovimento + ` ${movimento}`;
+            }
+            
+            this.passarVez();
+        },
         isBeige(index) {
             const row = Math.floor(index / this.width);
             const col = index % this.width;
@@ -368,6 +402,9 @@ import tabs from '../data/data';
         display: flex;
         justify-content: center;
         align-items: center;
+    }
+    .info {
+        color: black;
     }
     .beige {
         background-color: #f0d9b5; /* Cor bege */
