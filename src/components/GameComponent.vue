@@ -2,6 +2,7 @@
     <div class="title">
         <p v-if="brancas">Vez das <span>brancas</span></p>
         <p v-if="negras">Vez das <span>negras</span></p>
+        <p v-if="reiCapturado">{{ reiCapturado }}</p>
     </div>
     <div class="chessboard">
         <div v-for="(tabs, index) in tabuleiro" :key="index">
@@ -32,6 +33,7 @@ import tabs from '../data/data';
         return {
             brancas: false,
             negras: false,
+            reiCapturado: '',
             width: 8,
             tabuleiro: tabs,
             historicoMovimentos: []
@@ -45,10 +47,13 @@ import tabs from '../data/data';
             this.brancas = !this.brancas;
             this.negras = !this.negras;
         },
+        finalizarJogo(cor) {
+            this.brancas = false;
+            this.negras = false;
+            this.reiCapturado = `Vitória das ${cor === 'white' ? 'brancas' : 'negras'}!`
+        },
         handleDragStart(event) {
             event.dataTransfer.setData('text/plain', event.target.id);
-            console.log(event.target.id)
-            console.log(event)
         },
         handleDragOver(event) {
             event.preventDefault();
@@ -117,6 +122,8 @@ import tabs from '../data/data';
                 case 'king':
                     if (this.validarMovimentoRei(draggedPiece, droppedSquare)) {
                         this.trocarPecas(draggedPiece, droppedSquare);
+                    } else if (draggedPiece.moved === false) {
+                        this.validarRoque(draggedPiece, droppedSquare)
                     } else {
                         console.log('Movimento inválido para o rei');
                     }
@@ -132,6 +139,10 @@ import tabs from '../data/data';
             // Vez das brancas
             if(this.brancas && dragged.color === 'white') {
                 if(dropped.color !== 'white') {
+                    // Se for um rei, ou torre, notificar que foi movido
+                    if(dragged.type === 'king' || dragged.type === 'rook') {
+                        this.tabuleiro[dragged.id].moved = true;
+                    }
                     // Trocar os atributos "id" entre os objetos
                     const idTemp = this.tabuleiro[dragged.id].id;
                     this.tabuleiro[dragged.id].id = this.tabuleiro[dropped.id].id;
@@ -142,13 +153,13 @@ import tabs from '../data/data';
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = { id: idTemp, type: 'empty', svg: ''};
 
-                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, true);
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, true, dragged.color);
                     } else {
                         const temp = this.tabuleiro[dragged.id];
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = temp;
 
-                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, false);
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, false, dragged.color);
                     }
 
                 } else {
@@ -159,6 +170,10 @@ import tabs from '../data/data';
             // Vez das negras
             } else if (this.negras && dragged.color === 'black') {
                 if(dropped.color !== 'black') {
+                    // Se for um rei, ou torre, notificar que foi movido
+                    if(dragged.type === 'king' || dragged.type === 'rook') {
+                        this.tabuleiro[dragged.id].moved = true;
+                    }
                     // Trocar os atributos "id" entre os objetos
                     const idTemp = this.tabuleiro[dragged.id].id;
                     this.tabuleiro[dragged.id].id = this.tabuleiro[dropped.id].id;
@@ -170,13 +185,13 @@ import tabs from '../data/data';
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = { id: idTemp, type: 'empty', svg: ''};
 
-                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, true);
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, true, dragged.color);
                     } else {
                         const temp = this.tabuleiro[dragged.id];
                         this.tabuleiro[dragged.id] = this.tabuleiro[dropped.id];
                         this.tabuleiro[dropped.id] = temp;
 
-                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, false);
+                        this.adicionarMovimentoAoHistorico(dragged.id, dragged.type, dropped.type, false, dragged.color);
                     }
 
                 } else {
@@ -195,7 +210,6 @@ import tabs from '../data/data';
                 if ((dragged.color === 'white' && dragged.id > 47) || (dragged.color === 'black' && dragged.id < 16)) {
                     // Verifica se não há peças no caminho
                     const middleSquareId = dragged.id + 8 * direction;
-                    console.log(middleSquareId);
                     const middleSquare = this.tabuleiro.find(square => square.id === middleSquareId);
                     if (middleSquare.type === 'empty') {
                         return true;
@@ -343,21 +357,134 @@ import tabs from '../data/data';
 
             return false; // Movimento inválido para o rei
         },
-        adicionarMovimentoAoHistorico(destino, tipoOrigem, tipoDestino, captura) {
+        validarRoque(dragged, dropped) {
+            let possivelTorreCurto = null;
+            let possivelTorreLongo = null;
+
+            if (this.brancas && dragged.color === 'white') {
+                if (dropped.id === 62) {
+                    possivelTorreCurto = this.tabuleiro.find(objeto => objeto.id === 63);
+                    if (
+                        possivelTorreCurto &&
+                        possivelTorreCurto.type === 'rook' &&
+                        !dragged.moved &&
+                        !possivelTorreCurto.moved
+                    ) {
+                        if (this.verificarCaminhoLivre(dragged.id, possivelTorreCurto.id)) {
+                            return this.realizarRoqueCurto(dragged, possivelTorreCurto);
+                        }
+                    }
+                } else if (dropped.id === 58) {
+                    possivelTorreLongo = this.tabuleiro.find(objeto => objeto.id === 56);
+                    if (
+                        possivelTorreLongo &&
+                        possivelTorreLongo.type === 'rook' &&
+                        !dragged.moved &&
+                        !possivelTorreLongo.moved
+                    ) {
+                        if (this.verificarCaminhoLivre(possivelTorreLongo.id, dragged.id)) {
+                            return this.realizarRoqueLongo(dragged, possivelTorreLongo);
+                        }
+                    }
+                }
+            } else if (this.negras && dragged.color === 'black') {
+                if (dropped.id === 6) {
+                    possivelTorreCurto = this.tabuleiro.find(objeto => objeto.id === 7);
+                    if (
+                        possivelTorreCurto &&
+                        possivelTorreCurto.type === 'rook' &&
+                        !dragged.moved &&
+                        !possivelTorreCurto.moved
+                    ) {
+                        if (this.verificarCaminhoLivre(dragged.id, possivelTorreCurto.id)) {
+                            return this.realizarRoqueCurto(dragged, possivelTorreCurto);
+                        }
+                    }
+                } else if (dropped.id === 2) {
+                    possivelTorreLongo = this.tabuleiro.find(objeto => objeto.id === 0);
+                    if (
+                        possivelTorreLongo &&
+                        possivelTorreLongo.type === 'rook' &&
+                        !dragged.moved &&
+                        !possivelTorreLongo.moved
+                    ) {
+                        if (this.verificarCaminhoLivre(possivelTorreLongo.id, dragged.id)) {
+                            return this.realizarRoqueLongo(dragged, possivelTorreLongo);
+                        }
+                    }
+                }
+            }
+            return console.log('Movimento inválido para o rei');
+        },
+        verificarCaminhoLivre(start, end) {
+            const min = Math.min(start, end);
+            const max = Math.max(start, end);
+
+            for (let i = min + 1; i < max; i++) {
+                const square = this.tabuleiro.find(objeto => objeto.id === i);
+                if (square.type !== 'empty') {
+                    return false;
+                }
+            }
+            return true;
+        },
+        realizarRoqueCurto(rei, torre) {
+            const novaPosicaoRei = rei.id + 2;
+            const novaPosicaoTorre = rei.id + 1;
+            rei.moved = true;
+            torre.moved = true;
+
+            // Atualizar as posições no tabuleiro
+            this.tabuleiro[novaPosicaoRei] = rei;
+            this.tabuleiro[novaPosicaoTorre] = torre;
+            this.tabuleiro[rei.id] = { id: rei.id, type: 'empty', svg: '' };
+            this.tabuleiro[torre.id] = { id: torre.id, type: 'empty', svg: '' };
+
+            // Atualizar os dados das peças
+            rei.id = novaPosicaoRei;
+            torre.id = novaPosicaoTorre;
+
+            this.adicionarRoque(false);
+        },
+        realizarRoqueLongo(rei, torre) {
+            const novaPosicaoRei = rei.id - 2;
+            const novaPosicaoTorre = rei.id - 1;
+            rei.moved = true;
+            torre.moved = true;
+
+            // Atualizar as posições no tabuleiro
+            this.tabuleiro[novaPosicaoRei] = rei;
+            this.tabuleiro[novaPosicaoTorre] = torre;
+            this.tabuleiro[rei.id] = { id: rei.id, type: 'empty', svg: '' };
+            this.tabuleiro[torre.id] = { id: torre.id, type: 'empty', svg: '' };
+
+            // Atualizar os dados das peças
+            rei.id = novaPosicaoRei;
+            torre.id = novaPosicaoTorre;
+
+            this.adicionarRoque(true);
+        },
+        adicionarMovimentoAoHistorico(destino, tipoOrigem, tipoDestino, captura, cor) {
             let pecaOrig = ''
-            if(tipoOrigem !== 'pawn') {
+            if(tipoOrigem === 'knight') {
+                pecaOrig = tipoOrigem.charAt(1).toUpperCase();
+            } else if(tipoOrigem !== 'pawn') {
                 pecaOrig = tipoOrigem.charAt(0).toUpperCase();
             }
             let localDest = ''
-            if(tipoDestino !== 'pawn' && tipoDestino !== 'empty') {
+            if(tipoDestino === 'knight') {
+                localDest = tipoDestino.charAt(1).toUpperCase();
+            } else if(tipoDestino !== 'pawn' && tipoDestino !== 'empty') {
                 localDest = tipoDestino.charAt(0).toUpperCase();
             }
             let movimento = '';
 
             if (captura) {
-                movimento = `${pecaOrig}x${localDest}${destino}`;
+                movimento = `${pecaOrig}x${localDest}${this.numConversion(destino)}`;
+                console.log(`${tipoOrigem} ${cor} capturou ${tipoDestino} na posição ${destino}`)
             } else {
-                movimento = `${pecaOrig}${localDest}${destino}`;
+                movimento = `${pecaOrig}${localDest}${this.numConversion(destino)}`;
+                console.log(`${tipoOrigem} ${cor} moveu-se na posição ${destino}`)
             }
 
             // Adiciona ao histórico de movimentos
@@ -367,8 +494,40 @@ import tabs from '../data/data';
                 const ultimoMovimento = this.historicoMovimentos[this.historicoMovimentos.length - 1];
                 this.historicoMovimentos[this.historicoMovimentos.length - 1] = ultimoMovimento + ` ${movimento}`;
             }
+
+            if (tipoDestino === 'king') {
+                return this.finalizarJogo(cor);
+            }
+
+            console.log(this.tabuleiro)
             
             this.passarVez();
+        },
+        adicionarRoque(tipo) {
+            let roque = ''
+            if(tipo) {
+                roque = 'O-O-O'
+            } else {
+                roque = 'O-O'
+            }
+
+            // Adiciona ao histórico de movimentos
+            if (this.brancas) {
+                this.historicoMovimentos.push(` ${this.historicoMovimentos.length + 1}. ${roque}`);
+                console.log(tipo ? 'As brancas realizaram um roque longo' : 'As brancas realizaram um roque curto');
+            } else {
+                const ultimoMovimento = this.historicoMovimentos[this.historicoMovimentos.length - 1];
+                this.historicoMovimentos[this.historicoMovimentos.length - 1] = ultimoMovimento + ` ${roque}`;
+                console.log(tipo ? 'As negras realizaram um roque longo' : 'As negras realizaram um roque curto');
+            }
+            
+            this.passarVez();
+        },
+        numConversion(num) {
+            const colunas = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+            const linha = 8 - Math.floor(num / 8);
+            const coluna = colunas[num % 8];
+            return coluna + linha;
         },
         isBeige(index) {
             const row = Math.floor(index / this.width);

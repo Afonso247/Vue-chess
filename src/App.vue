@@ -1,37 +1,36 @@
 <script>
 import Stats from './components/StatsComponent.vue';
 import Game from './components/GameComponent.vue';
-import Modal from './components/Modal.vue';
+// import Modal from './components/Modal.vue';
 
   export default {
     name: "App",
-    data() {
-      return {
-        mostrarModal: false,
-        modalText: '',
-        dataDump: null // 0: pratos lavados, 1: tempo total, 2: tempo médio
-      }
-    },
-    methods: {
-      modalVitoria(resultData) {
-        this.mostrarModal = true;
-        this.modalText = "Parabéns! Você venceu."
-        this.dataDump = resultData
-      },
-      modalDerrota(resultData) {
-        this.mostrarModal = true;
-        this.modalText = "Que pena! Você perdeu."
-        this.dataDump = resultData
-      },
-      fecharModal() {
-        this.mostrarModal = false;
-        return window.location.reload();
-      }
-    },
+    // data() {
+    //   return {
+    //     mostrarModal: false,
+    //     modalText: '',
+    //     dataDump: null // 0: pratos lavados, 1: tempo total, 2: tempo médio
+    //   }
+    // },
+    // methods: {
+    //   modalVitoria(resultData) {
+    //     this.mostrarModal = true;
+    //     this.modalText = "Parabéns! Você venceu."
+    //     this.dataDump = resultData
+    //   },
+    //   modalDerrota(resultData) {
+    //     this.mostrarModal = true;
+    //     this.modalText = "Que pena! Você perdeu."
+    //     this.dataDump = resultData
+    //   },
+    //   fecharModal() {
+    //     this.mostrarModal = false;
+    //     return window.location.reload();
+    //   }
+    // },
     components: {
       Stats,
-      Game,
-      Modal
+      Game
     }
   }
 </script>
@@ -39,7 +38,8 @@ import Modal from './components/Modal.vue';
 <template>
   <div class="container">
     <Stats />
-    <Game @vitoria="modalVitoria" @derrota="modalDerrota"/>
+    <Game />
+    <!-- <Game @vitoria="modalVitoria" @derrota="modalDerrota"/>
     <Modal v-if="mostrarModal" @close="fecharModal">
       <div>
         <h2>
@@ -55,7 +55,7 @@ import Modal from './components/Modal.vue';
           Tempo médio por prato: {{ dataDump[2] }}seg
         </p>
       </div>
-    </Modal>
+    </Modal> -->
   </div>
 
 </template>

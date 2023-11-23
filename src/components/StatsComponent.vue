@@ -3,11 +3,11 @@
         <div class="content-container">
             <img src="/images/chess.png" alt="chess-img">
             <div class="text-container">
-                <h1>Chess</h1>
+                <h1>Crazy Chess</h1>
                 <ul>
-                    <li>Uma joguinho tradicional de xadrez - <span>
-                        jogue para prender o rei adversário e aplicar xeque-mate 
-                        em seu oponente
+                    <li>Uma variação do classico jogo de xadrez - <span>
+                        jogue estrategicamente as suas peças de xadrez 
+                        para capturar o rei adversário e vencer a partida
                     </span></li>
                 </ul>
             </div>
